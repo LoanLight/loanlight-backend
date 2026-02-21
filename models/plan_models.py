@@ -1,24 +1,78 @@
-from pydantic import BaseModel
+from __future__ import annotations
+
 from datetime import date
+from decimal import Decimal
+from typing import Literal
 
-class PlanCompareRequest(BaseModel):
-    mode: str = "optimize"  # optimize|target_date
-    risk_level: str = "moderate"  # low|moderate|high
-    strategy: str = "avalanche"  # avalanche|snowball|hybrid
-    monthly_essentials: float = 900.0
+from pydantic import BaseModel, Field
 
-    # used only if mode == target_date
-    target_payoff_date: date | None = None
 
-class PlanCompareResponse(BaseModel):
+Mode = Literal["optimize", "target_date"]
+RepaymentStrategy = Literal["avalanche", "snowball", "hybrid"]
+RiskLevel = Literal["low", "moderate", "high"]
+BudgetSource = Literal["slider", "plaid", "csv"]
+
+
+class BudgetInputs(BaseModel):
+    monthly_non_housing_essentials: Decimal = Field(ge=0)
+    monthly_commitment: Decimal = Field(ge=0)
+    source: BudgetSource = "slider"
+
+
+class PlanCalculateRequest(BaseModel):
+    mode: Mode
+    repayment_strategy: RepaymentStrategy = "avalanche"
+    risk_level: RiskLevel = "moderate"
+    investing_enabled: bool = True
+    target_date: date | None = None
+    budget_inputs: BudgetInputs
+
+
+class LimitsOut(BaseModel):
+    min_commitment: Decimal
+    max_commitment: Decimal
+
+
+class CashflowOut(BaseModel):
+    take_home_monthly: Decimal
+    rent_monthly: Decimal
+    non_rent_essentials: Decimal
+
+    discretionary_before_loans: Decimal
+    minimum_loan_payments: Decimal
+
+    monthly_commitment: Decimal
+    extra_above_minimum: Decimal
+    discretionary_left: Decimal
+
+
+class InvestingOut(BaseModel):
+    enabled: bool
+    risk_level: RiskLevel
+    expected_return_annual: Decimal
+    monthly_investment: Decimal
+    projected_investment_value_at_freedom: Decimal
+
+
+class SeriesPoint(BaseModel):
+    month_index: int
+    date: date
+    remaining_loan_balance: Decimal
+    paid_pct: Decimal
+    investment_balance: Decimal
+
+
+class PlanCalculateResponse(BaseModel):
     freedom_date: date
-    feasible: bool
-    required_monthly_payment: float
-    shortfall_monthly: float
+    months_to_freedom: int
 
-    earliest_possible_payoff: date
-    minimum_only_payoff: date
+    limits: LimitsOut
+    cashflow: CashflowOut
 
-    monthly_breakdown: dict
-    series_preview: list[dict]
-    assumptions: dict
+    total_starting_debt: Decimal
+    total_interest_paid: Decimal
+
+    investing: InvestingOut
+    series: list[SeriesPoint]
+
+    warnings: list[str] = []

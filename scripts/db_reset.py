@@ -19,7 +19,7 @@ def get_engine():
 def confirm(force: bool):
     if force:
         return
-    print("⚠️ DROPPING ALL TABLES. This deletes everything.")
+    print("DROPPING ALL TABLES. This deletes everything.")
     typed = input("Type DROP ALL to continue: ").strip()
     if typed != "DROP ALL":
         print("Aborted.")
@@ -36,11 +36,11 @@ def main():
     if args.cmd in ("drop", "reset"):
         confirm(args.force)
         Base.metadata.drop_all(bind=engine)
-        print("✅ Dropped all tables")
+        print("Dropped all tables")
 
     if args.cmd in ("create", "reset"):
         Base.metadata.create_all(bind=engine)
-        print("✅ Created all tables")
+        print("Created all tables")
 
 if __name__ == "__main__":
     main()

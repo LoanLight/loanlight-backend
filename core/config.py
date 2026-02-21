@@ -1,31 +1,35 @@
+from __future__ import annotations
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    # Which env file to load: ".local.env" or ".prod.env"
+    ENV_FILE: str = ".local.env"
+
+    # Database
+    DATABASE_URL: str
+
+    # JWT
+    JWT_SECRET: str
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRY_DAYS: int = 90
+
+    # HUD (optional)
+    HUD_API_TOKEN: str | None = None
+
+    model_config = SettingsConfigDict(
+        env_file=".local.env",   # default; we override below
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+
+# Load settings from ENV_FILE if it exists in env vars.
+# Example:
+#   export ENV_FILE=.prod.env
+#   uvicorn app.main:app ...
 import os
-from pathlib import Path
 
-ENV = os.getenv("ENV", "local").lower()
-
-if ENV == "prod":
-    env_file = ".env.prod"
-else:
-    env_file = ".env.local"
-
-def load_env_file(filename: str):
-    path = Path(filename)
-    if not path.exists():
-        return
-    for line in path.read_text().splitlines():
-        if line.strip() and not line.startswith("#"):
-            key, _, value = line.partition("=")
-            os.environ.setdefault(key.strip(), value.strip())
-
-load_env_file(env_file)
-
-DATABASE_URL = os.getenv("DATABASE_URL")
-JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret")
-JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRY_DAYS = int(os.getenv("ACCESS_TOKEN_EXPIRY_DAYS", 90))
-
-HUD_API_TOKEN = os.getenv("HUD_API_TOKEN")
-HUD_BASE_URL = os.getenv(
-    "HUD_BASE_URL",
-    "https://www.huduser.gov/hudapi/public/fmr",
-)
+_env_file = os.getenv("ENV_FILE", ".local.env")
+settings = Settings(_env_file=_env_file)

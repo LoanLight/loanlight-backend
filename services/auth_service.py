@@ -1,20 +1,21 @@
+from __future__ import annotations
+
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import HTTPException, status
 from pwdlib import PasswordHash
 import jwt
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from core.config import ACCESS_TOKEN_EXPIRY_DAYS, JWT_SECRET, JWT_ALGORITHM
-from database.session import db_session
+from core.config import settings
 from entities.account_entity import AccountEntity
-from models.account_models import AccountResponse
+from models.account_models import TokenResponse
 
 
 class AuthService:
-    def __init__(self, session: Session = Depends(db_session)):
+    def __init__(self, session: Session):
         self._session = session
         self.password_hash = PasswordHash.recommended()
 
@@ -25,38 +26,43 @@ class AuthService:
         return self.password_hash.verify(plain_password, hashed_password)
 
     def create_access_token(self, subject: UUID) -> str:
-        expire = datetime.now(timezone.utc) + timedelta(days=ACCESS_TOKEN_EXPIRY_DAYS)
+        expire = datetime.now(timezone.utc) + timedelta(days=settings.ACCESS_TOKEN_EXPIRY_DAYS)
         payload = {"sub": str(subject), "exp": expire}
-        return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+        return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
     def decode_token_subject(self, token: str) -> UUID:
         try:
-            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
             sub = payload.get("sub")
             if not sub:
-                raise HTTPException(status_code=401, detail="Invalid or expired token.")
+                raise ValueError("missing sub")
             return UUID(sub)
-        except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, ValueError):
+        except Exception:
             raise HTTPException(status_code=401, detail="Invalid or expired token.")
 
-    def authenticate_user(self, email: str, password: str) -> AccountResponse:
-        email_norm = email.strip().lower()
-        query = select(AccountEntity).where(AccountEntity.email == email_norm)
-        account = self._session.scalars(query).one_or_none()
-
-        if not account or not self.verify_password(password, account.hashed_password):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password.",
-            )
-
-        return account.to_response_model()
-
     def get_account_entity_by_id(self, account_id: UUID) -> AccountEntity:
-        query = select(AccountEntity).where(AccountEntity.id == account_id)
-        account = self._session.scalars(query).one_or_none()
-
+        q = select(AccountEntity).where(AccountEntity.id == account_id)
+        account = self._session.scalars(q).one_or_none()
         if not account:
             raise HTTPException(status_code=404, detail="Account not found.")
-
         return account
+
+    def signup(self, email: str, password: str) -> TokenResponse:
+        email = email.lower().strip()
+        q = select(AccountEntity).where(AccountEntity.email == email)
+        if self._session.scalars(q).one_or_none():
+            raise HTTPException(status_code=400, detail="Email already registered.")
+
+        account = AccountEntity(email=email, hashed_password=self.hash_password(password))
+        self._session.add(account)
+        self._session.commit()
+        self._session.refresh(account)
+        return TokenResponse(access_token=self.create_access_token(account.id))
+
+    def login(self, email: str, password: str) -> TokenResponse:
+        email = email.lower().strip()
+        q = select(AccountEntity).where(AccountEntity.email == email)
+        account = self._session.scalars(q).one_or_none()
+        if not account or not self.verify_password(password, account.hashed_password):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password.")
+        return TokenResponse(access_token=self.create_access_token(account.id))

@@ -1,18 +1,30 @@
+from __future__ import annotations
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from core.config import DATABASE_URL
+from sqlalchemy.orm import sessionmaker, Session
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+from core.config import settings
 
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine,
+engine = create_engine(
+    settings.DATABASE_URL,
+    pool_pre_ping=True,
+    future=True,
 )
 
-def db_session():
-    db = SessionLocal()
+SessionLocal = sessionmaker(
+    bind=engine,
+    autoflush=False,
+    autocommit=False,
+    future=True,
+)
+
+
+def db_session() -> Session:
+    """
+    FastAPI dependency that provides a SQLAlchemy Session.
+    """
+    session = SessionLocal()
     try:
-        yield db
+        yield session
     finally:
-        db.close()
+        session.close()

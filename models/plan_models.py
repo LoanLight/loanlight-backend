@@ -20,11 +20,9 @@ class BudgetInputs(BaseModel):
 
 
 class PlanCalculateRequest(BaseModel):
-    mode: Mode
     repayment_strategy: RepaymentStrategy = "avalanche"
     risk_level: RiskLevel = "moderate"
     investing_enabled: bool = True
-    target_date: date | None = None
     budget_inputs: BudgetInputs
 
 

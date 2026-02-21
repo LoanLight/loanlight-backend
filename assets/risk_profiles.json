@@ -1,0 +1,5 @@
+{
+  "low": { "invest_pct": 0.2, "extra_loan_pct": 0.8, "expected_return_annual": 0.05 },
+  "moderate": { "invest_pct": 0.5, "extra_loan_pct": 0.5, "expected_return_annual": 0.07 },
+  "high": { "invest_pct": 0.8, "extra_loan_pct": 0.2, "expected_return_annual": 0.09 }
+}

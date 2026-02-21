@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16
+    container_name: loanlight_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: loanlight
+    ports:
+      - "5432:5432"
+    volumes:
+      - loanlight_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d loanlight"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    container_name: loanlight_api
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/workspace:cached
+    working_dir: /workspace
+    ports:
+      - "8000:8000"
+    environment:
+      ENV: local
+    command: >
+      bash -lc "
+      pip install -r requirements.txt &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+volumes:
+  loanlight_pgdata:

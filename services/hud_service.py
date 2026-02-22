@@ -51,7 +51,10 @@ class HudService:
                 raise HTTPException(status_code=502, detail="HUD metro lookup failed.")
             data = r.json()
 
-        metros = data.get("data", [])
+        if isinstance(data, list):
+            metros = data
+        else:
+            metros = data.get("data", []) if isinstance(data, dict) else []
         self._metro_cache = {"metros": metros}
         self._metro_cache_ts = now
         return metros

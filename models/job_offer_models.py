@@ -18,3 +18,5 @@ class JobOfferOut(BaseModel):
     bonus: Decimal | None
     state: str
     estimated_take_home_monthly: Decimal
+    tax_source: str # api ninjas or fallback 
+    tax_payload: dict | None = None

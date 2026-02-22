@@ -7,7 +7,6 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-Mode = Literal["optimize", "target_date"]
 RepaymentStrategy = Literal["avalanche", "snowball", "hybrid"]
 RiskLevel = Literal["low", "moderate", "high"]
 BudgetSource = Literal["slider", "plaid", "csv"]

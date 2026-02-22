@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -6,16 +8,16 @@ from deps.auth_deps import get_current_account
 from models.job_offer_models import JobOfferIn, JobOfferOut
 from services.job_offer_service import JobOfferService
 
-router = APIRouter(prefix="/job-offer", tags=["job_offer"])
+router = APIRouter(prefix="/job-offer", tags=["job-offer"])
 
 
 @router.post("", response_model=JobOfferOut)
-def upsert_job_offer(
+async def upsert_job_offer(
     payload: JobOfferIn,
     session: Session = Depends(db_session),
     current=Depends(get_current_account),
 ):
-    return JobOfferService(session).upsert(current.id, payload)
+    return await JobOfferService(session).upsert(current.id, payload)
 
 
 @router.get("/current", response_model=JobOfferOut)

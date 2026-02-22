@@ -6,6 +6,9 @@ from routes.private_loan_routes import router as private_router
 from routes.job_offer_routes import router as job_offer_router
 from routes.housing_routes import router as housing_router
 from routes.plan_routes import router as plan_router
+from routes.profile_routes import router as profile_router
+from routes.limits_routes import router as limits_router
+from routes.loan_summary_routes import router as loan_summary_router
 
 app = FastAPI()
 
@@ -16,3 +19,7 @@ app.include_router(private_router)
 app.include_router(job_offer_router)
 app.include_router(housing_router)
 app.include_router(plan_router)
+
+app.include_router(profile_router)
+app.include_router(limits_router)
+app.include_router(loan_summary_router)

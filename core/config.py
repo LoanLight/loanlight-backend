@@ -17,6 +17,8 @@ class Settings(BaseSettings):
 
     # HUD (optional)
     HUD_API_TOKEN: str | None = None
+    
+    API_NINJAS_KEY: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".local.env",   # default; we override below

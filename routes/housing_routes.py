@@ -15,7 +15,7 @@ async def upsert_housing(
     session: Session = Depends(db_session),
     current=Depends(get_current_account),
 ):
-    return HousingService(session).upsert(current.id, payload)
+    return await HousingService(session).upsert(current.id, payload)
 
 
 @router.get("/current", response_model=HousingOut)
